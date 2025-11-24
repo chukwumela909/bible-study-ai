@@ -118,9 +118,9 @@ export default function Home() {
                 >
                   <Plus className="w-5 h-5" />
                 </button>
-                <div className="pl-2 text-muted-foreground">
-                  <Search className="w-5 h-5" />
-                </div>
+                    {/* <div className="pl-2 text-muted-foreground">
+                      <Search className="w-5 h-5" />
+                    </div>   */}
                 <input 
                   type="text" 
                   placeholder="Ask anything..." 
@@ -158,7 +158,7 @@ export default function Home() {
             )}
 
             {/* Quick Actions / Suggestions */}
-            {!showResults && (
+            { (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto w-full pt-4">
                <button className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-secondary transition-all text-left group">
                   <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:bg-blue-500/20 transition-colors">
