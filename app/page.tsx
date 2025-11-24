@@ -18,6 +18,14 @@ export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [prompt, setPrompt] = React.useState("");
   const [showResults, setShowResults] = React.useState(false);
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  React.useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [prompt]);
 
   React.useEffect(() => {
     setSelectedVerses(getSelectedVerses());
@@ -41,7 +49,8 @@ export default function Home() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
       handleSubmit();
     }
   };
@@ -110,10 +119,10 @@ export default function Home() {
             {/* Search Input */}
             <div className="relative w-full max-w-2xl mx-auto group">
               <div className="absolute inset-0 bg-muted rounded-2xl transform translate-y-1 transition-transform group-hover:translate-y-2" />
-              <div className="relative bg-card border border-border rounded-2xl p-2 flex items-center gap-3 shadow-sm transition-all duration-200 focus-within:shadow-md focus-within:border-ring/20">
+              <div className="relative bg-card border border-border rounded-2xl p-2 flex items-end gap-3 shadow-sm transition-all duration-200 focus-within:shadow-md focus-within:border-ring/20">
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="pl-2 text-muted-foreground hover:text-primary transition-colors p-2 hover:bg-secondary rounded-lg"
+                  className="pl-2 text-muted-foreground hover:text-primary transition-colors p-2 hover:bg-secondary rounded-lg mb-1"
                   title="Add verse to context"
                 >
                   <Plus className="w-5 h-5" />
@@ -121,13 +130,14 @@ export default function Home() {
                     {/* <div className="pl-2 text-muted-foreground">
                       <Search className="w-5 h-5" />
                     </div>   */}
-                <input 
-                  type="text" 
+                <textarea 
+                  ref={textareaRef}
                   placeholder="Ask anything..." 
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground h-12 text-lg font-sans"
+                  className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-lg font-sans resize-none overflow-y-auto min-h-12 py-3 max-h-[200px]"
+                  rows={1}
                   autoFocus
                 />
                 <div className="flex items-center gap-1 pr-2">
@@ -158,7 +168,7 @@ export default function Home() {
             )}
 
             {/* Quick Actions / Suggestions */}
-            { (
+            {/* { (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto w-full pt-4">
                <button className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-secondary transition-all text-left group">
                   <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:bg-blue-500/20 transition-colors">
@@ -190,7 +200,7 @@ export default function Home() {
                   </div>
                </button>
               </div>
-            )}
+            )} */}
 
           </motion.div>
         </div>
