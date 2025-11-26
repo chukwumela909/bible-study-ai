@@ -15,24 +15,64 @@ import {
   User,
   PanelLeftClose,
   PanelLeftOpen,
-  Plus
+  Plus,
+  MessageSquare,
+  Trash2,
+  MoreHorizontal
 } from "lucide-react";
+import { getThreads, deleteThread, type ChatThread } from "@/lib/chat";
 
 interface SidebarProps {
   className?: string;
   onClose?: () => void;
+  onNewThread?: () => void;
+  onSelectThread?: (threadId: string) => void;
+  currentThreadId?: string | null;
+  refreshTrigger?: number;
 }
 
-export function Sidebar({ className, onClose }: SidebarProps) {
+export function Sidebar({ 
+  className, 
+  onClose, 
+  onNewThread, 
+  onSelectThread,
+  currentThreadId,
+  refreshTrigger = 0
+}: SidebarProps) {
   const { theme, setTheme } = useTheme();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [threads, setThreads] = React.useState<ChatThread[]>([]);
+  const [isLoadingThreads, setIsLoadingThreads] = React.useState(true);
+
+  React.useEffect(() => {
+    loadThreads();
+  }, [refreshTrigger]);
+
+  const loadThreads = async () => {
+    setIsLoadingThreads(true);
+    const data = await getThreads();
+    setThreads(data);
+    setIsLoadingThreads(false);
+  };
+
+  const handleDeleteThread = async (e: React.MouseEvent, threadId: string) => {
+    e.stopPropagation();
+    if (confirm("Delete this conversation?")) {
+      await deleteThread(threadId);
+      loadThreads();
+      if (currentThreadId === threadId && onNewThread) {
+        onNewThread();
+      }
+    }
+  };
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
-  const NavItem = ({ icon: Icon, label, active = false }: { icon: any, label: string, active?: boolean }) => (
+  const NavItem = ({ icon: Icon, label, active = false, onClick }: { icon: any, label: string, active?: boolean, onClick?: () => void }) => (
     <button
+      onClick={onClick}
       className={cn(
         "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors w-full group",
         active 
@@ -80,22 +120,60 @@ export function Sidebar({ className, onClose }: SidebarProps) {
       </div>
 
       {/* New Thread Button */}
-      <div className="px-3 mb-6">
-        <button className={cn(
-          "flex items-center gap-2 w-full rounded-full border border-border bg-background hover:bg-secondary/50 transition-all p-2 shadow-sm",
-          isCollapsed ? "justify-center" : "px-3"
-        )}>
+      <div className="px-3 mb-4">
+        <button 
+          onClick={onNewThread}
+          className={cn(
+            "flex items-center gap-2 w-full rounded-full border border-border bg-background hover:bg-secondary/50 transition-all p-2 shadow-sm",
+            isCollapsed ? "justify-center" : "px-3"
+          )}
+        >
           <Plus className="w-4 h-4 shrink-0" />
           {!isCollapsed && <span className="text-sm font-medium">New Thread</span>}
         </button>
       </div>
 
+      {/* Chat History */}
+      {!isCollapsed && (
+        <div className="px-3 mb-4 flex-1 overflow-y-auto">
+          <div className="text-xs font-medium text-muted-foreground mb-2 px-2">Recent</div>
+          <div className="space-y-1">
+            {isLoadingThreads ? (
+              <div className="px-2 py-3 text-sm text-muted-foreground">Loading...</div>
+            ) : threads.length === 0 ? (
+              <div className="px-2 py-3 text-sm text-muted-foreground">No conversations yet</div>
+            ) : (
+              threads.slice(0, 20).map((thread) => (
+                <div
+                  key={thread.id}
+                  onClick={() => onSelectThread?.(thread.id)}
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer group transition-colors",
+                    currentThreadId === thread.id
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                  )}
+                >
+                  <MessageSquare className="w-4 h-4 shrink-0" />
+                  <span className="text-sm truncate flex-1">{thread.title}</span>
+                  <button
+                    onClick={(e) => handleDeleteThread(e, thread.id)}
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive/20 rounded transition-opacity"
+                  >
+                    <Trash2 className="w-3 h-3 text-destructive" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Main Nav */}
-      <nav className="flex-1 px-3 space-y-1">
-        <NavItem icon={Home} label="Home" active />
-        <NavItem icon={Compass} label="Discover" />
+      <nav className={cn("px-3 space-y-1", isCollapsed && "flex-1")}>
+        <NavItem icon={Home} label="Home" active={!currentThreadId} onClick={onNewThread} />
         <NavItem icon={Library} label="Library" />
-        <NavItem icon={Clock} label="History" />
+        <NavItem icon={Settings} label="Settings" />
       </nav>
 
       {/* Footer Actions */}
