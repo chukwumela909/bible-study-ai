@@ -1,13 +1,14 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import { OtpVerificationForm } from "@/components/otp-verification-form";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Book } from "lucide-react";
 
-export default function VerifyPage() {
+function VerifyContent() {
   const [error, setError] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
   const router = useRouter();
@@ -90,5 +91,21 @@ export default function VerifyPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <VerifyContent />
+    </Suspense>
   );
 }
