@@ -7,6 +7,7 @@ import { VerseSearchModal } from "@/components/verse-search-modal";
 import { VerseGroupChip } from "@/components/verse-group-chip";
 import { ChatMessage } from "@/components/chat-message";
 import { AuthPromptModal } from "@/components/auth-prompt-modal";
+import { VoiceChatButton, MemoizedVoiceChatButton } from "@/components/voice-chat-button";
 import { motion } from "framer-motion";
 import { ArrowRight, BookOpen, MessageCircle, Sparkles, Search, Plus, Menu, LogOut, User } from "lucide-react";
 import { getSelectedVerses, addVerse, removeVerse } from "@/lib/storage";
@@ -43,6 +44,10 @@ export default function Home() {
   const [showAuthPrompt, setShowAuthPrompt] = React.useState(false);
   const [currentThreadId, setCurrentThreadId] = React.useState<string | null>(null);
   const [sidebarRefresh, setSidebarRefresh] = React.useState(0);
+  const currentThreadIdRef = React.useRef<string | null>(null);
+  const landingVoiceSlotRef = React.useRef<HTMLDivElement | null>(null);
+  const chatVoiceSlotRef = React.useRef<HTMLDivElement | null>(null);
+  const [voiceButtonContainer, setVoiceButtonContainer] = React.useState<HTMLElement | null>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -58,6 +63,15 @@ export default function Home() {
   React.useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isChatLoading]);
+
+  React.useEffect(() => {
+    currentThreadIdRef.current = currentThreadId;
+  }, [currentThreadId]);
+
+  React.useLayoutEffect(() => {
+    const target = messages.length > 0 ? chatVoiceSlotRef.current : landingVoiceSlotRef.current;
+    setVoiceButtonContainer(target);
+  }, [messages.length]);
 
   React.useEffect(() => {
     setSelectedVerses(getSelectedVerses());
@@ -200,6 +214,50 @@ export default function Home() {
     router.push("/auth/sign-in");
   };
 
+  // Voice chat handlers - stable references via refs to prevent reconnects
+  const handleVoiceChatStart = React.useCallback(async () => {
+    if (!currentThreadIdRef.current) {
+      const newThread = await createThread("Voice Conversation");
+      if (newThread) {
+        currentThreadIdRef.current = newThread.id;
+        setCurrentThreadId(newThread.id);
+        setSidebarRefresh(prev => prev + 1);
+      }
+    }
+  }, []);
+
+  const handleVoiceUserTranscript = React.useCallback((text: string) => {
+    const userMessage: Message = { role: "user", content: text };
+    setMessages(prev => [...prev, userMessage]);
+
+    setTimeout(async () => {
+      const threadId = currentThreadIdRef.current;
+      if (threadId) {
+        await addMessage(threadId, "user", text, []);
+        await updateThreadTitle(threadId, generateTitleFromMessage(text));
+      }
+    }, 0);
+  }, []);
+
+  const handleVoiceAIResponse = React.useCallback((text: string) => {
+    setMessages(prev => [...prev, {
+      role: "assistant",
+      content: text,
+      verses: []
+    }]);
+
+    setTimeout(async () => {
+      const threadId = currentThreadIdRef.current;
+      if (threadId) {
+        await addMessage(threadId, "assistant", text, []);
+      }
+    }, 0);
+  }, []);
+
+  const handleVoiceError = React.useCallback((error: string) => {
+    console.error("Voice chat error:", error);
+  }, []);
+
   const verseGroups = React.useMemo(() => groupVerses(selectedVerses), [selectedVerses]);
 
   return (
@@ -331,6 +389,7 @@ export default function Home() {
                       autoFocus
                     />
                     <div className="flex items-center gap-1 pr-2">
+                      <div ref={chatVoiceSlotRef} className="flex-shrink-0 w-10 h-10" />
                       <Button 
                         size="icon" 
                         className="rounded-xl h-10 w-10 bg-primary text-primary-foreground hover:opacity-90 shadow-none"
@@ -400,6 +459,7 @@ export default function Home() {
                      <div className="hidden sm:flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs text-muted-foreground font-medium border border-border">
                         <span>Focus</span>
                      </div>
+                    <div ref={landingVoiceSlotRef} className="flex-shrink-0 w-10 h-10" />
                     <Button 
                       size="icon" 
                       className="rounded-xl h-10 w-10 bg-primary text-primary-foreground hover:opacity-90 shadow-none"
@@ -430,6 +490,15 @@ export default function Home() {
           </div>
         )}
       </main>
+
+      <MemoizedVoiceChatButton
+        triggerContainer={voiceButtonContainer}
+        onStart={handleVoiceChatStart}
+        onUserTranscript={handleVoiceUserTranscript}
+        onAIResponse={handleVoiceAIResponse}
+        onError={handleVoiceError}
+        disabled={!user}
+      />
 
       {/* Verse Search Modal */}
       <VerseSearchModal
