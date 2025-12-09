@@ -193,7 +193,7 @@ export function VoiceChatButton({
 
   return (
     <>
-      {buttonContainer ? createPortal(triggerButton, buttonContainer) : triggerButton}
+      {buttonContainer ? createPortal(triggerButton, buttonContainer) : null}
 
       {/* Full Screen Voice Chat Overlay */}
       {mounted && createPortal(

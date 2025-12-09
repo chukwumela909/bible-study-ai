@@ -45,8 +45,8 @@ export default function Home() {
   const [currentThreadId, setCurrentThreadId] = React.useState<string | null>(null);
   const [sidebarRefresh, setSidebarRefresh] = React.useState(0);
   const currentThreadIdRef = React.useRef<string | null>(null);
-  const landingVoiceSlotRef = React.useRef<HTMLDivElement | null>(null);
-  const chatVoiceSlotRef = React.useRef<HTMLDivElement | null>(null);
+  const [landingVoiceSlot, setLandingVoiceSlot] = React.useState<HTMLDivElement | null>(null);
+  const [chatVoiceSlot, setChatVoiceSlot] = React.useState<HTMLDivElement | null>(null);
   const [voiceButtonContainer, setVoiceButtonContainer] = React.useState<HTMLElement | null>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
@@ -68,10 +68,10 @@ export default function Home() {
     currentThreadIdRef.current = currentThreadId;
   }, [currentThreadId]);
 
-  React.useLayoutEffect(() => {
-    const target = messages.length > 0 ? chatVoiceSlotRef.current : landingVoiceSlotRef.current;
+  React.useEffect(() => {
+    const target = messages.length > 0 ? chatVoiceSlot : landingVoiceSlot;
     setVoiceButtonContainer(target);
-  }, [messages.length]);
+  }, [messages.length, chatVoiceSlot, landingVoiceSlot]);
 
   React.useEffect(() => {
     setSelectedVerses(getSelectedVerses());
@@ -389,7 +389,7 @@ export default function Home() {
                       autoFocus
                     />
                     <div className="flex items-center gap-1 pr-2">
-                      <div ref={chatVoiceSlotRef} className="flex-shrink-0 w-10 h-10" />
+                      <div ref={setChatVoiceSlot} className="shrink-0 w-10 h-10" />
                       <Button 
                         size="icon" 
                         className="rounded-xl h-10 w-10 bg-primary text-primary-foreground hover:opacity-90 shadow-none"
@@ -459,7 +459,7 @@ export default function Home() {
                      <div className="hidden sm:flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs text-muted-foreground font-medium border border-border">
                         <span>Focus</span>
                      </div>
-                    <div ref={landingVoiceSlotRef} className="flex-shrink-0 w-10 h-10" />
+                    <div ref={setLandingVoiceSlot} className="shrink-0 w-10 h-10" />
                     <Button 
                       size="icon" 
                       className="rounded-xl h-10 w-10 bg-primary text-primary-foreground hover:opacity-90 shadow-none"
